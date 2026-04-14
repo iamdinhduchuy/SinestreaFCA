@@ -1,11 +1,13 @@
 import { LoginArgs } from "./@types/index-entry";
+import ClientConfig from "./client/ClientConfig";
 import { injectCookies } from "./client/cookieJar";
 import ContextInstance from "./context";
 import FacebookCore from "./cores/Facebook";
+import initializeRoutes from "./cores/Routes";
 import utils from "./utils";
 import { logger } from "./utils/log";
 
-const Login: LoginInterface = async (...args: LoginArgs) => {
+const Login = async (...args: LoginArgs) => {
   let cookieString: string | undefined;
 
   if (args.length === 1 && Array.isArray(args[0])) {
@@ -53,6 +55,21 @@ const Login: LoginInterface = async (...args: LoginArgs) => {
     "success",
     `Login successfully with user ID: ${ContextInstance.userID}`,
   );
+
+  logger("info", "Try to loading config profile...");
+  let clientConfigInitResult = ClientConfig.init();
+
+  if (clientConfigInitResult) {
+    logger("success", "Config profile loaded successfully");
+  } else {
+    logger("error", "Failed to load config profile, using default config");
+  }
+
+  logger("info", "Start to load routes...");
+  const api = initializeRoutes();
+  logger("success", "Routes loaded successfully");
+
+  return api;
 };
 
 export default Login;

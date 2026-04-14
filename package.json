@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx --tsconfig tsconfig.json src/index.ts",
-    "test": "tsx --tsconfig tsconfig.json src/test/test.ts"
+    "test": "tsx --tsconfig tsconfig.json src/test/test.ts",
+    "dev": "tsx --tsconfig tsconfig.json src/index.ts"
   },
   "keywords": [],
   "author": "",

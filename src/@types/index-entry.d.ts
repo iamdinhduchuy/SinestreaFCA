@@ -6,6 +6,4 @@ type LoginArgs =
   | [cookies: string]
   | [username: string, password: string, twoFA?: string];
 
-export interface LoginInterface {
-  (...args: LoginArgs): Promise<API>;
-}
+export type LoginInterface = (...args: LoginArgs) => Promise<APIRoutes>;
