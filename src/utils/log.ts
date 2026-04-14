@@ -20,9 +20,9 @@ const gradientStyles: Record<string, (text: string) => string> = {
 };
 
 /**
- * Hàm logger tùy biến
- * @param type Loại thông báo (success, warn, error, info, hoặc bất kỳ string nào)
- * @param message Nội dung cần log
+ * Custom logger
+ * @param type Log level (success, warn, error, info, or any string)
+ * @param message Content to log
  */
 export const logger = (type: LogType, message: string): void => {
   const time = chalk.gray.bold(
@@ -40,6 +40,6 @@ export const logger = (type: LogType, message: string): void => {
   const paddingSize = Math.max(0, 10 - upperType.length);
   const padding = " ".repeat(paddingSize);
 
-  // Render: Tag có màu + Khoảng trắng không màu + dấu gạch đứng
+  // Render: colored tag + uncolored padding + pipe separator
   console.log(`${time} ${coloredTag}${padding} | ${gradientStyle(message)}`);
 };

@@ -1,70 +1,70 @@
 # SinestreaFCA
 
-> **Facebook Chat API** không chính thức viết bằng TypeScript — đăng nhập bằng cookie/appState, trích xuất token bảo mật và kết nối MQTT real-time.
+> Unofficial **Facebook Chat API** written in TypeScript — login via cookie/appState, extract security tokens, and connect to MQTT for real-time messaging.
 
 ---
 
-## Mục lục
+## Table of Contents
 
-- [Giới thiệu](#giới-thiệu)
-- [Tính năng](#tính-năng)
-- [Yêu cầu](#yêu-cầu)
-- [Cài đặt](#cài-đặt)
-- [Cách sử dụng](#cách-sử-dụng)
-- [Cấu trúc dự án](#cấu-trúc-dự-án)
+- [Introduction](#introduction)
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
 - [API](#api)
-- [Giấy phép](#giấy-phép)
+- [License](#license)
 
 ---
 
-## Giới thiệu
+## Introduction
 
-**SinestreaFCA** là thư viện TypeScript giúp tự động hóa tương tác với Facebook Messenger thông qua cookie phiên đăng nhập. Thư viện trích xuất các tham số bảo mật (`fb_dtsg`, `lsd`, `jazoest`) và `Sequence ID` từ giao diện web Facebook, đồng thời hỗ trợ kết nối MQTT để lắng nghe sự kiện tin nhắn real-time.
-
----
-
-## Tính năng
-
-- 🔐 **Đăng nhập linh hoạt**: hỗ trợ cookie string, AppState (JSON) hoặc email/mật khẩu.
-- 🔑 **Trích xuất token bảo mật**: tự động lấy `fb_dtsg`, `lsd`, `jazoest` từ nhiều nguồn (trang chủ, mobile, Business).
-- 📨 **Lấy Sequence ID**: qua HTML hoặc GraphQL khi cần.
-- 🌐 **Cấu hình MQTT**: tự phát hiện endpoint và region cho kết nối real-time.
-- 🎨 **Logger tùy biến**: hiển thị log màu sắc gradient dễ đọc.
-- 🍪 **Cookie Jar tự động**: quản lý cookie giữa các request bằng `tough-cookie`.
+**SinestreaFCA** is a TypeScript library for automating interactions with Facebook Messenger using session cookies. It extracts security parameters (`fb_dtsg`, `lsd`, `jazoest`) and the `Sequence ID` from Facebook's web interface, and supports MQTT connections for real-time message events.
 
 ---
 
-## Yêu cầu
+## Features
 
-| Công cụ | Phiên bản tối thiểu |
-|---------|-------------------|
-| Node.js | 18+ |
-| npm     | 8+  |
+- 🔐 **Flexible login**: supports cookie string, AppState (JSON), or email/password.
+- 🔑 **Security token extraction**: automatically retrieves `fb_dtsg`, `lsd`, `jazoest` from multiple sources (home page, mobile, Business).
+- 📨 **Sequence ID retrieval**: via HTML or GraphQL as needed.
+- 🌐 **MQTT configuration**: auto-detects endpoint and region for real-time connections.
+- 🎨 **Custom logger**: gradient-colored log output for easy reading.
+- 🍪 **Automatic Cookie Jar**: manages cookies across requests using `tough-cookie`.
 
 ---
 
-## Cài đặt
+## Requirements
+
+| Tool    | Minimum version |
+|---------|-----------------|
+| Node.js | 18+             |
+| npm     | 8+              |
+
+---
+
+## Installation
 
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/iamdinhduchuy/SinestreaFCA.git
 cd SinestreaFCA
 
-# Cài đặt dependencies
+# Install dependencies
 npm install
 ```
 
 ---
 
-## Cách sử dụng
+## Usage
 
-### Chạy development
+### Run in development mode
 
 ```bash
 npm run dev
 ```
 
-### Đăng nhập bằng Cookie String
+### Login with Cookie String
 
 ```typescript
 import Login from "./src/index";
@@ -72,7 +72,7 @@ import Login from "./src/index";
 await Login("cookie1=value1; cookie2=value2; ...");
 ```
 
-### Đăng nhập bằng AppState
+### Login with AppState
 
 ```typescript
 import Login from "./src/index";
@@ -87,15 +87,15 @@ const appState = [
     creation: "2024-01-01T00:00:00.000Z",
     lastAccessed: "2024-01-01T00:00:00.000Z",
   },
-  // ... các cookie khác
+  // ... other cookies
 ];
 
 await Login(appState);
 ```
 
-### Đăng nhập bằng Email / Mật khẩu
+### Login with Email / Password
 
-> ⚠️ Tính năng này đang trong quá trình phát triển.
+> ⚠️ This feature is currently under development.
 
 ```typescript
 import Login from "./src/index";
@@ -105,25 +105,25 @@ await Login("email@example.com", "password123");
 
 ---
 
-## Cấu trúc dự án
+## Project Structure
 
 ```
 SinestreaFCA/
 ├── src/
-│   ├── index.ts            # Entry point — hàm Login
+│   ├── index.ts            # Entry point — Login function
 │   ├── context.ts          # Singleton Context (userID, token, MQTT, ...)
-│   ├── @types/             # Khai báo TypeScript
-│   │   ├── api.d.ts        # Interface API routes
-│   │   ├── global.d.ts     # Khai báo global
+│   ├── @types/             # TypeScript declarations
+│   │   ├── api.d.ts        # API routes interface
+│   │   ├── global.d.ts     # Global declarations
 │   │   ├── index-entry.d.ts# LoginArgs & LoginInterface
 │   │   └── types.d.ts      # AppState type
 │   ├── client/
 │   │   └── cookieJar.ts    # Axios HTTP client + Cookie Jar
 │   ├── cores/
-│   │   └── Facebook.ts     # Logic cốt lõi: trích xuất token, MQTT, GraphQL
+│   │   └── Facebook.ts     # Core logic: token extraction, MQTT, GraphQL
 │   └── utils/
-│       ├── index.ts        # Tiện ích chuyển đổi (AppState ↔ Cookie string)
-│       └── log.ts          # Logger màu sắc gradient
+│       ├── index.ts        # Conversion utilities (AppState ↔ Cookie string)
+│       └── log.ts          # Gradient color logger
 ├── package.json
 ├── tsconfig.json
 └── LICENSE
@@ -135,47 +135,47 @@ SinestreaFCA/
 
 ### `Login(...args)`
 
-Hàm khởi động chính. Nhận vào một trong ba dạng tham số:
+Main entry function. Accepts one of three argument forms:
 
-| Tham số | Kiểu | Mô tả |
-|---------|------|-------|
-| `appState` | `AppState` | Mảng object cookie |
-| `cookieString` | `string` | Chuỗi cookie dạng `key=value; ...` |
-| `email, password` | `string, string` | Email và mật khẩu Facebook |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `appState` | `AppState` | Array of cookie objects |
+| `cookieString` | `string` | Cookie string in `key=value; ...` format |
+| `email, password` | `string, string` | Facebook email and password |
 
-Sau khi đăng nhập thành công, `ContextInstance` sẽ được cập nhật với:
+After a successful login, `ContextInstance` is populated with:
 
-| Thuộc tính | Mô tả |
-|-----------|-------|
-| `userID` | ID người dùng Facebook |
-| `fb_dtsg` | Token bảo mật DTSG |
-| `lsd` | Token LSD |
-| `jazoest` | Giá trị jazoest |
-| `mqttEndpoint` | Endpoint kết nối MQTT |
-| `region` | Region MQTT (mặc định: `PRN`) |
+| Property | Description |
+|----------|-------------|
+| `userID` | Facebook user ID |
+| `fb_dtsg` | DTSG security token |
+| `lsd` | LSD token |
+| `jazoest` | jazoest value |
+| `mqttEndpoint` | MQTT connection endpoint |
+| `region` | MQTT region (default: `PRN`) |
 
 ---
 
 ### `FacebookCore`
 
-Class singleton cung cấp các phương thức:
+Singleton class providing the following methods:
 
-| Phương thức | Mô tả |
-|------------|-------|
-| `getFullContext()` | Lấy toàn bộ context từ Facebook |
-| `getDtsg()` | Lấy `fb_dtsg` và `lsd` |
-| `getSequenceId(userID, fb_dtsg)` | Lấy Sequence ID qua GraphQL |
-| `getMqttConfig(html, userID)` | Trích xuất cấu hình MQTT |
-| `extractSecurityParams(html)` | Phân tích tham số bảo mật từ HTML |
-| `generateJazoest(fb_dtsg)` | Tính `jazoest` từ `fb_dtsg` |
-| `checkHealthAccount(uid, token)` | Kiểm tra trạng thái tài khoản |
-
----
-
-## Giấy phép
-
-Dự án được phân phối dưới giấy phép **ISC**. Xem file [LICENSE](./LICENSE) để biết thêm chi tiết.
+| Method | Description |
+|--------|-------------|
+| `getFullContext()` | Retrieves the full context from Facebook |
+| `getDtsg()` | Retrieves `fb_dtsg` and `lsd` |
+| `getSequenceId(userID, fb_dtsg)` | Retrieves Sequence ID via GraphQL |
+| `getMqttConfig(html, userID)` | Extracts MQTT configuration |
+| `extractSecurityParams(html)` | Parses security parameters from HTML |
+| `generateJazoest(fb_dtsg)` | Computes `jazoest` from `fb_dtsg` |
+| `checkHealthAccount(uid, token)` | Checks account health status |
 
 ---
 
-> **Lưu ý**: Dự án này chỉ dành cho mục đích học tập và nghiên cứu. Việc sử dụng tự động hoá trên Facebook có thể vi phạm [Điều khoản Dịch vụ của Facebook](https://www.facebook.com/terms.php). Hãy sử dụng có trách nhiệm.
+## License
+
+This project is distributed under the **ISC** license. See the [LICENSE](./LICENSE) file for more details.
+
+---
+
+> **Disclaimer**: This project is intended for educational and research purposes only. Automating interactions on Facebook may violate [Facebook's Terms of Service](https://www.facebook.com/terms.php). Use responsibly.

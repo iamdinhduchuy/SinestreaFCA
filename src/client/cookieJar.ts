@@ -31,7 +31,7 @@ export const httpClient = wrapper(
 );
 
 /**
- * Hàm nạp Cookie
+ * Inject cookies into the jar
  */
 export async function injectCookies(rawCookie: string): Promise<boolean> {
   const cookieParts = rawCookie.split(";");
