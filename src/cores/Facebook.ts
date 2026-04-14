@@ -27,7 +27,7 @@ class FacebookCore {
   constructor() {}
 
   /**
-   * Thuật toán tính jazoest từ fb_dtsg
+   * Algorithm to compute jazoest from fb_dtsg
    */
   public generateJazoest(fb_dtsg: string): string {
     let sum = 0;
@@ -38,7 +38,7 @@ class FacebookCore {
   }
 
   /**
-   * Trích xuất các tham số bảo mật từ HTML
+   * Extract security parameters from HTML
    */
   public extractSecurityParams(html: string) {
     const fb_dtsg =
@@ -75,7 +75,7 @@ class FacebookCore {
   }
 
   /**
-   * Lấy Sequence ID qua GraphQL (Dùng khi irisSeqID từ HTML bị null hoặc bằng 0)
+   * Retrieve Sequence ID via GraphQL (used when irisSeqID from HTML is null or zero)
    */
   public async getSequenceId(userID: string, fb_dtsg: string): Promise<string> {
     try {
@@ -119,7 +119,7 @@ class FacebookCore {
 
       return seqId ? seqId.toString() : "0";
     } catch (error: any) {
-      console.error("[FacebookUtils] Lỗi Bước B:", error.message);
+      console.error("[FacebookUtils] Error in Step B:", error.message);
       return "0";
     }
   }
@@ -139,7 +139,7 @@ class FacebookCore {
 
       if (endpointMatch.input?.includes("601051028565049")) {
         console.warn(
-          "[FacebookUtils] Phát hiện cảnh báo endpoint đặc biệt (601051028565049)",
+          "[FacebookUtils] Special endpoint warning detected (601051028565049)",
         );
       }
     } else {
@@ -165,7 +165,7 @@ class FacebookCore {
   }
 
   /**
-   * Lấy fb_dtsg và lsd từ các nguồn khác nhau
+   * Retrieve fb_dtsg and lsd from various sources
    */
   public async getDtsg(): Promise<DtsgResponse> {
     try {
@@ -177,7 +177,7 @@ class FacebookCore {
           status: true,
           data: params.fb_dtsg,
           lsd: params.lsd,
-          message: "Lấy thành công từ Facebook Home",
+          message: "Successfully retrieved from Facebook Home",
         };
       }
 
@@ -191,7 +191,7 @@ class FacebookCore {
           status: true,
           data: mParams.fb_dtsg,
           lsd: mParams.lsd,
-          message: "Lấy thành công từ Mobile Facebook",
+          message: "Successfully retrieved from Mobile Facebook",
         };
       }
 
@@ -200,12 +200,12 @@ class FacebookCore {
         return {
           status: true,
           data: bizDtsg,
-          message: "Lấy thành công từ Business",
+          message: "Successfully retrieved from Business",
         };
 
       return {
         status: false,
-        message: "Không tìm thấy token. Có thể bị Checkpoint.",
+        message: "Token not found. Account may be checkpointed.",
       };
     } catch (error: any) {
       return { status: false, message: error.message };
@@ -228,7 +228,7 @@ class FacebookCore {
   }
 
   /**
-   * Phương thức lấy Token EAAB/EAAI dự phòng khi EAAG bị null
+   * Fallback method to retrieve EAAB/EAAI token when EAAG is null
    */
   public async getTokenEAAB(): Promise<string | null> {
     try {
@@ -248,7 +248,7 @@ class FacebookCore {
   }
 
   /**
-   * Hàm tổng hợp lấy toàn bộ Context
+   * Aggregate method to retrieve the full context
    */
   public async getFullContext(): Promise<FullContextResponse> {
     try {
@@ -258,7 +258,7 @@ class FacebookCore {
       const params = this.extractSecurityParams(homeRes.data);
 
       if (!params.fb_dtsg)
-        return { status: false, message: "Không tìm thấy DTSG" };
+        return { status: false, message: "DTSG token not found" };
 
       let lastSeqId = params.irisSeqID;
       const cookies = await jar.getCookies("https://www.facebook.com");
@@ -270,7 +270,7 @@ class FacebookCore {
       ContextInstance.mqttEndpoint = mqttConfig.endpoint;
 
       if ((!lastSeqId || lastSeqId === "0") && uid) {
-        logger("warn", "SequenceID từ HTML bằng 0, đang gọi GraphQL...");
+        logger("warn", "SequenceID from HTML is 0, calling GraphQL...");
         lastSeqId = await this.getSequenceId(uid, params.fb_dtsg);
         logger("info", `lastSeqId: ${lastSeqId}`);
       }
