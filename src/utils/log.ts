@@ -32,18 +32,11 @@ export const logger = (type: LogType, message: string): void => {
   const upperType = type.toUpperCase();
   const styleKey = type.toLowerCase();
 
-  // Chọn style
   const typeStyle = typeStyles[styleKey] || typeStyles.default;
   const gradientStyle = gradientStyles[styleKey] || gradientStyles.default;
 
-  // Tạo phần tag có màu nền
   const coloredTag = typeStyle(upperType);
 
-  /**
-   * XỬ LÝ PAD KHÔNG KÉO MÀU NỀN:
-   * Chúng ta tính toán số khoảng trắng cần thiết dựa trên độ dài chữ (upperType).
-   * Tổng độ dài muốn có là 10. Thêm 2 vì trong typeStyle đã có 2 khoảng trắng đệm (trước và sau).
-   */
   const paddingSize = Math.max(0, 10 - upperType.length);
   const padding = " ".repeat(paddingSize);
 
