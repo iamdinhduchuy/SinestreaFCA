@@ -1,3 +1,7 @@
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 import { LoginArgs } from "./@types/index-entry";
 import ClientConfig from "./client/ClientConfig";
 import { injectCookies } from "./client/cookieJar";
@@ -38,18 +42,22 @@ const Login = async (...args: LoginArgs) => {
     logger("error", "Failed to inject cookies to jar");
   }
 
-  const coreContext = await FacebookCore.getFullContext();
+  try {
+    const coreContext = await FacebookCore.getFullContext();
 
-  if (!coreContext) {
-    logger("error", "Failed to get security parameters from Facebook");
-    throw new Error("Failed to get security parameters from Facebook");
+    if (!coreContext) {
+      logger("error", "Failed to get security parameters from Facebook");
+      throw new Error("Failed to get security parameters from Facebook");
+    }
+
+    ContextInstance.setSequenceID(Number(coreContext.lastSeqId || -1));
+    ContextInstance.fb_dtsg = coreContext.fb_dtsg || null;
+    ContextInstance.jazoest = coreContext.jazoest || null;
+    ContextInstance.lsd = coreContext.lsd || null;
+    ContextInstance.userID = coreContext.uid || null;
+  } catch (e) {
+    console.log(e);
   }
-
-  ContextInstance.setSequenceID(Number(coreContext.lastSeqId || -1));
-  ContextInstance.fb_dtsg = coreContext.fb_dtsg || null;
-  ContextInstance.jazoest = coreContext.jazoest || null;
-  ContextInstance.lsd = coreContext.lsd || null;
-  ContextInstance.userID = coreContext.uid || null;
 
   logger(
     "success",

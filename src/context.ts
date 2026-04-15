@@ -1,3 +1,5 @@
+import { existsSync, writeFileSync } from "fs";
+
 class Context {
   public userID: string | null = null;
   public region: string = "PRN";
@@ -7,9 +9,17 @@ class Context {
   public userAgent: string =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36";
   public mqttEndpoint: string | null = null;
+  public backupSequenceIDFilePath: string =
+    process.cwd() + "/sequence_id_backup.txt";
 
   private lastSequenceID: number | null = null;
   private clientID: string = ((Math.random() * 2147483647) | 0).toString(16);
+
+  constructor() {
+    if (!existsSync(this.backupSequenceIDFilePath)) {
+      writeFileSync(this.backupSequenceIDFilePath, "");
+    }
+  }
 
   public getSequenceID(): number {
     return this.lastSequenceID || -1;

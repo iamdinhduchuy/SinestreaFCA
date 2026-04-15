@@ -1,3 +1,5 @@
+import { readFileSync, writeFileSync } from "fs";
+
 interface DtsgResponse {
   status: boolean;
   data?: string; // fb_dtsg
@@ -13,7 +15,7 @@ interface FullContextResponse {
     EAAB: string;
   };
   jazoest?: string;
-  lastSeqId?: string;
+  lastSeqId?: number;
   uid?: string;
   lsd?: string;
   message?: string;
@@ -75,9 +77,31 @@ class FacebookCore {
   }
 
   /**
-   * Retrieve Sequence ID via GraphQL (used when irisSeqID from HTML is null or zero)
+   * Retrieve Sequence ID via GraphQL (used when irisSeqID from HTML is null or zero) always return backup value in storage and will return latest value if pass "refresh" as true
    */
-  public async getSequenceId(userID: string, fb_dtsg: string): Promise<string> {
+  public async getSequenceId(
+    userID: string,
+    fb_dtsg: string,
+    refresh: boolean = false,
+  ): Promise<number> {
+    if (!refresh) {
+      const backupRaw = readFileSync(
+        ContextInstance.backupSequenceIDFilePath,
+        "utf-8",
+      );
+
+      const backupValue: number = Number(backupRaw.trim());
+
+      if (!isNaN(Number(backupValue)) && backupValue > 0) {
+        logger("info", `Using backup Sequence ID: ${backupValue}`);
+        return Number(backupValue);
+      }
+
+      logger(
+        "warn",
+        "No valid backup Sequence ID found, proceeding to GraphQL",
+      );
+    }
     try {
       const jazoest = this.generateJazoest(fb_dtsg);
 
@@ -115,12 +139,23 @@ class FacebookCore {
       const resData =
         typeof res.data === "string" ? JSON.parse(res.data) : res.data;
 
-      const seqId = resData.data?.viewer?.message_threads?.sync_sequence_id;
+      const seqIdRaw = resData.data?.viewer?.message_threads?.sync_sequence_id;
+      const seqId: number = seqIdRaw ? Number(seqIdRaw) : -1;
 
-      return seqId ? seqId.toString() : "0";
+      if (seqId > 0) {
+        logger("info", `Retrieved Sequence ID from GraphQL: ${seqId}`);
+        writeFileSync(
+          ContextInstance.backupSequenceIDFilePath,
+          seqId.toString(),
+          "utf-8",
+        );
+        return seqId;
+      }
+
+      return -1;
     } catch (error: any) {
       console.error("[FacebookUtils] Error in Step B:", error.message);
-      return "0";
+      return -1;
     }
   }
 
@@ -260,7 +295,7 @@ class FacebookCore {
       if (!params.fb_dtsg)
         return { status: false, message: "DTSG token not found" };
 
-      let lastSeqId = params.irisSeqID;
+      let lastSeqId: number = Number(params.irisSeqID) || 0;
       const cookies = await jar.getCookies("https://www.facebook.com");
       const uid = cookies.find((c) => c.key === "c_user")?.value;
 
@@ -269,7 +304,7 @@ class FacebookCore {
       ContextInstance.region = mqttConfig.region;
       ContextInstance.mqttEndpoint = mqttConfig.endpoint;
 
-      if ((!lastSeqId || lastSeqId === "0") && uid) {
+      if ((!lastSeqId || lastSeqId === 0) && uid) {
         logger("warn", "SequenceID from HTML is 0, calling GraphQL...");
         lastSeqId = await this.getSequenceId(uid, params.fb_dtsg);
         logger("info", `lastSeqId: ${lastSeqId}`);
@@ -288,6 +323,7 @@ class FacebookCore {
         token: { EAAB: access_token ?? "", EAAG: "" },
       };
     } catch (error: any) {
+      console.log(error);
       return { status: false, message: error.message };
     }
   }
