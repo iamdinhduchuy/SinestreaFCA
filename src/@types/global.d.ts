@@ -3,6 +3,7 @@ import { LoginInterface, AppState } from "./types.d.ts";
 
 declare global {
   type AppState = AppState;
-  interface APIRoutes extends APIRoutes {}
-  interface LoginInterface extends LoginInterface {}
+  type AppEvent = AppEvent;
+  interface API extends APIRoutes {}
+  interface Login extends LoginInterface {}
 }

@@ -11,7 +11,13 @@ import initializeRoutes from "./cores/Routes";
 import utils from "./utils";
 import { logger } from "./utils/log";
 
-const Login = async (...args: LoginArgs) => {
+interface LoginResponse {
+  status: boolean;
+  message: string;
+  api?: API;
+}
+
+const Login = async (...args: LoginArgs): Promise<LoginResponse> => {
   let cookieString: string | undefined;
 
   if (args.length === 1 && Array.isArray(args[0])) {
@@ -28,8 +34,6 @@ const Login = async (...args: LoginArgs) => {
 
   if (!cookieString) throw new Error("No cookie string provided for login");
 
-  logger("info", "Try to find cookie for login...");
-
   try {
     const result = await injectCookies(cookieString);
     if (result) {
@@ -40,6 +44,10 @@ const Login = async (...args: LoginArgs) => {
     }
   } catch (error) {
     logger("error", "Failed to inject cookies to jar");
+    return {
+      status: false,
+      message: "Failed to inject cookies to jar",
+    };
   }
 
   try {
@@ -50,13 +58,24 @@ const Login = async (...args: LoginArgs) => {
       throw new Error("Failed to get security parameters from Facebook");
     }
 
+    if(coreContext.lastSeqId === -1) {
+      logger("error", "Failed to retrieve Sequence ID, account may be checkpointed");
+      return {
+        status: false,
+        message: "Failed to retrieve Sequence ID, account may be checkpointed",
+      };
+    }
+
     ContextInstance.setSequenceID(Number(coreContext.lastSeqId || -1));
     ContextInstance.fb_dtsg = coreContext.fb_dtsg || null;
     ContextInstance.jazoest = coreContext.jazoest || null;
     ContextInstance.lsd = coreContext.lsd || null;
     ContextInstance.userID = coreContext.uid || null;
   } catch (e) {
-    console.log(e);
+    return {
+      status: false,
+      message: "Failed to retrieve security parameters from Facebook, possibly due to checkpointed account",
+    };
   }
 
   logger(
@@ -64,7 +83,6 @@ const Login = async (...args: LoginArgs) => {
     `Login successfully with user ID: ${ContextInstance.userID}`,
   );
 
-  logger("info", "Try to loading config profile...");
   let clientConfigInitResult = ClientConfig.init();
 
   if (clientConfigInitResult) {
@@ -73,11 +91,9 @@ const Login = async (...args: LoginArgs) => {
     logger("error", "Failed to load config profile, using default config");
   }
 
-  logger("info", "Start to load routes...");
-  const api = initializeRoutes();
+  const api: API = initializeRoutes();
   logger("success", "Routes loaded successfully");
-
-  return api;
+  return { status: true, message: "Login successful", api };
 };
 
-export default Login;
+export default Login satisfies Login;

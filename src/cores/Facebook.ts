@@ -25,8 +25,75 @@ import ContextInstance from "@/context";
 import { httpClient, jar } from "../client/cookieJar";
 import { logger } from "../utils/log";
 
+const CHECKPOINT_DETECTED = "CHECKPOINT_DETECTED";
+
 class FacebookCore {
   constructor() {}
+
+  private async fetchHtmlFollowingRedirect(
+    url: string,
+    referer?: string,
+    depth: number = 0,
+  ): Promise<string> {
+    if (depth > 5) {
+      throw new Error(`Too many redirect hops while fetching ${url}`);
+    }
+
+    const response = await httpClient.get(url, {
+      headers: referer
+        ? {
+            referer,
+          }
+        : undefined,
+    });
+
+    if (typeof response.data !== "string") {
+      return response.data;
+    }
+
+    const redirectUrl = this.extractRedirectUrl(response.data);
+
+    if (!redirectUrl) {
+      return response.data;
+    }
+
+    const nextUrl = new URL(redirectUrl, url).toString();
+
+    logger(
+      "warn",
+      `HTML redirect detected, following to ${nextUrl}`,
+    );
+
+    if(nextUrl.includes("checkpoint/")) {
+      logger("error", "Account is checkpointed, cannot proceed further.");
+
+      return CHECKPOINT_DETECTED
+    }
+
+    return this.fetchHtmlFollowingRedirect(nextUrl, url, depth + 1);
+  }
+
+  private extractRedirectUrl(html: string): string | null {
+    const metaRefreshMatch = html.match(
+      /<meta\s+http-equiv=["']refresh["']\s+content=["'][^"']*url=([^"']+)["']/i,
+    );
+
+    if (metaRefreshMatch?.[1]) {
+      return metaRefreshMatch[1].replace(/&amp;/g, "&");
+    }
+
+    const locationReplaceMatch = html.match(
+      /window\.location\.replace\(["']([^"']+)["']\)/i,
+    );
+
+    if (locationReplaceMatch?.[1]) {
+      return locationReplaceMatch[1].replace(/\\\//g, "/");
+    }
+
+    const anchorMatch = html.match(/<a\s+href=["']([^"']+)["']/i);
+
+    return anchorMatch?.[1] ?? null;
+  }
 
   /**
    * Algorithm to compute jazoest from fb_dtsg
@@ -99,7 +166,7 @@ class FacebookCore {
 
       logger(
         "warn",
-        "No valid backup Sequence ID found, proceeding to GraphQL",
+        "No valid backup Sequence ID found, proceesing to GraphQL",
       );
     }
     try {
@@ -136,8 +203,57 @@ class FacebookCore {
         },
       );
 
-      const resData =
-        typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+      const responseData =
+        typeof res.data === "string" && res.data.includes("window.location.replace")
+          ? await (async () => {
+              const redirectUrl = this.extractRedirectUrl(res.data);
+
+              if (!redirectUrl) {
+                return res.data;
+              }
+
+              const nextUrl = new URL(redirectUrl, "https://www.facebook.com/api/graphql/").toString();
+              logger(
+                "warn",
+                `GraphQL response returned a redirect page, following to ${nextUrl}`,
+              );
+
+              return this.fetchHtmlFollowingRedirect(nextUrl, "https://www.facebook.com/api/graphql/");
+            })()
+          : Promise.resolve(res.data);
+
+      const resolvedData = await responseData;
+
+      if (typeof resolvedData === "string") {
+        if(resolvedData === CHECKPOINT_DETECTED) {
+          return -1;
+        }
+        const trimmedData = resolvedData.trim();
+
+        if (trimmedData.startsWith("<")) {
+          logger(
+            "warn",
+            "GraphQL response resolved to HTML after redirect handling; skipping JSON parse.",
+          );
+
+          return -1;
+        }
+
+        const htmlParams = this.extractSecurityParams(resolvedData);
+        const htmlSeqId = Number(htmlParams.irisSeqID) || -1;
+
+        if (htmlSeqId > 0) {
+          logger("info", `Retrieved Sequence ID from redirected HTML: ${htmlSeqId}`);
+          writeFileSync(
+            ContextInstance.backupSequenceIDFilePath,
+            htmlSeqId.toString(),
+            "utf-8",
+          );
+          return htmlSeqId;
+        }
+      }
+
+      const resData = resolvedData;
 
       const seqIdRaw = resData.data?.viewer?.message_threads?.sync_sequence_id;
       const seqId: number = seqIdRaw ? Number(seqIdRaw) : -1;
@@ -307,7 +423,6 @@ class FacebookCore {
       if ((!lastSeqId || lastSeqId === 0) && uid) {
         logger("warn", "SequenceID from HTML is 0, calling GraphQL...");
         lastSeqId = await this.getSequenceId(uid, params.fb_dtsg);
-        logger("info", `lastSeqId: ${lastSeqId}`);
       }
 
       let access_token = await this.getTokenEAAG();
